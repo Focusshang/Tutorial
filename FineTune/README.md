@@ -3,7 +3,7 @@
 # 微调数据构造实验
 
 ## 1 xtuner教学
-详见：
+详见：https://github.com/InternLM/Tutorial/blob/main/xtuner/README.md
 ## 2 微调实战
 
 > 这里采用 **[COIG-CQIA](https://opendatalab.org.cn/OpenDataLab/COIG-CQIA)** **数据集**中的弱智吧数据

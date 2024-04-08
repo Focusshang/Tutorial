@@ -1,4 +1,4 @@
-![robot](imgs/head1.png)
+![robot](img/robot.webp)
 
 # 微调数据构造实验
 

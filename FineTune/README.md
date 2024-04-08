@@ -263,14 +263,17 @@ ln -s /share/temp/model_repos/internlm-chat-7b ~/ruozhiba/
 上传处理后的弱智吧数据
 
 #### 2.3.1 准备配置文件
+本案例基于internlm_chat_7b_qlora_oasst1_e3.py进行修改
+
 ```bash
 # 复制配置文件到当前目录
 xtuner copy-cfg internlm_chat_7b_qlora_oasst1_e3 .
+
 # 改个文件名
-mv internlm_chat_7b_qlora_oasst1_e3_copy.py internlm_chat_7b_qlora_medqa2019_e3.py
+mv internlm_chat_7b_qlora_oasst1_e3_copy.py internlm_chat_7b_qlora_ruozhiba_e3.py
 
 # 修改配置文件内容
-vim internlm_chat_7b_qlora_medqa2019_e3.py
+vim internlm_chat_7b_qlora_ruozhiba_e3.py
 ```
 
 减号代表要删除的行，加号代表要增加的行。
@@ -283,9 +286,9 @@ vim internlm_chat_7b_qlora_medqa2019_e3.py
 - pretrained_model_name_or_path = 'internlm/internlm-chat-7b'
 + pretrained_model_name_or_path = './internlm-chat-7b'
 
-# 修改训练数据为 MedQA2019-structured-train.jsonl 路径
+# 修改训练数据为弱智吧训练数据路径
 - data_path = 'timdettmers/openassistant-guanaco'
-+ data_path = 'MedQA2019-structured-train.jsonl'
++ data_path = 'train.jsonl'
 
 # 修改 train_dataset 对象
 train_dataset = dict(
@@ -304,10 +307,8 @@ train_dataset = dict(
 ```
 #### 2.3.2 **XTuner！启动！**
 
-![tH8udZzECYl5are.png](imgs/ysqd.png)
-
 ```bash
-xtuner train internlm_chat_7b_qlora_medqa2019_e3.py --deepspeed deepspeed_zero2
+xtuner train internlm_chat_7b_ruozhiba.py --deepspeed deepspeed_zero2
 ```
 
 #### 2.3.3 pth 转 huggingface
@@ -321,35 +322,10 @@ xtuner train internlm_chat_7b_qlora_medqa2019_e3.py --deepspeed deepspeed_zero2
 mkdir hf
 export MKL_SERVICE_FORCE_INTEL=1
 export MKL_THREADING_LAYER=GNU
-xtuner convert pth_to_hf ./internlm_chat_7b_qlora_oasst1_e3_copy.py ./work_dirs/internlm_chat_7b_qlora_oasst1_e3_copy/epoch_1.pth ./hf
+xtuner convert pth_to_hf ./internlm_chat_7b_qlora_ruozhiba_e3.py ./work_dirs/internlm_chat_7b_qlora_ruozhiba_e3/epoch_1.pth ./hf
 ```
 此时，路径中应该长这样：
-
-```Bash
-|-- internlm-chat-7b
-|-- internlm_chat_7b_qlora_oasst1_e3_copy.py
-|-- openassistant-guanaco
-|   |-- openassistant_best_replies_eval.jsonl
-|   `-- openassistant_best_replies_train.jsonl
-|-- hf
-|   |-- README.md
-|   |-- adapter_config.json
-|   |-- adapter_model.bin
-|   `-- xtuner_config.py
-`-- work_dirs
-    `-- internlm_chat_7b_qlora_oasst1_e3_copy
-        |-- 20231101_152923
-        |   |-- 20231101_152923.log
-        |   `-- vis_data
-        |       |-- 20231101_152923.json
-        |       |-- config.py
-        |       `-- scalars.json
-        |-- epoch_1.pth
-        |-- epoch_2.pth
-        |-- epoch_3.pth
-        |-- internlm_chat_7b_qlora_oasst1_e3_copy.py
-        `-- last_checkpoint
-```
+![path](img/path.png)
 
 <span style="color: red;">**此时，hf 文件夹即为我们平时所理解的所谓 “LoRA 模型文件”**</span>
 
@@ -378,12 +354,38 @@ xtuner chat ./merged --prompt-template internlm_chat
 ```
 
 #### 2.4.3 Demo
+- 新建cli_demo.py并填入以下内容
 
-- 修改 `cli_demo.py` 中的模型路径
-```diff
-- model_name_or_path = "/root/model/Shanghai_AI_Laboratory/internlm-chat-7b"
-+ model_name_or_path = "merged"
+```python
+import torch
+from transformers import AutoTokenizer, AutoModelForCausalLM
+
+
+model_name_or_path = "merged" //模型名称或路径
+
+tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=True)
+model = AutoModelForCausalLM.from_pretrained(model_name_or_path, trust_remote_code=True, torch_dtype=torch.bfloat16, device_map='auto')
+model = model.eval()
+
+system_prompt = """You are an AI assistant whose name is InternLM (书生·浦语).
+- InternLM (书生·浦语) is a conversational language model that is developed by Shanghai AI Laboratory (上海人工智能实验室). It is designed to be helpful, honest, and harmless.
+- InternLM (书生·浦语) can understand and communicate fluently in the language chosen by the user such as English and 中文.
+"""
+
+messages = [(system_prompt, '')]
+
+print("=============Welcome to InternLM chatbot, type 'exit' to exit.=============")
+
+while True:
+    input_text = input("User  >>> ")
+    input_text.replace(' ', '')
+    if input_text == "exit":
+        break
+    response, history = model.chat(tokenizer, input_text, history=messages)
+    messages.append((input_text, response))
+    print(f"robot >>> {response}")
 ```
+
 - 运行 `cli_demo.py` 以目测微调效果
 ```bash
 python ./cli_demo.py
@@ -393,7 +395,7 @@ python ./cli_demo.py
 
 | 微调前 | 微调后 |
 | --- | --- |
-| ![O23QD48iFSZMfbr.png](imgs/beforeFT.png) | ![L1sqmGgE6h2exWP.png](imgs/afterFT.png) |
+| ![before](img/before.png) | ![after](imgs/after.png) |
 
 **`xtuner chat`** **的启动参数**
 
@@ -416,78 +418,16 @@ python ./cli_demo.py
 | --top-p               | 如果设置为小于1的浮点数，仅保留概率相加高于 `top_p` 的最小一组最有可能的标记 |
 | --seed                | 用于可重现文本生成的随机种子                                 |
 
-同前述。[部署与测试](#24-部署与测试)
 
 
-
-## 3 其他已知问题和解决方案：
-https://docs.qq.com/doc/DY1d2ZVFlbXlrUERj
-
-
-小作业助教老师会在社群中公布。
-Have fun!
-
-
+## 3 其他已知问题和解决方案
 
 ## 4 注意事项
 
-本教程使用 xtuner 0.1.9 版本
-若需要跟着本教程一步一步完成，建议严格遵循本教程的步骤！
-
-
-
-若出现莫名其妙报错，请尝试更换为以下包的版本：（如果有报错再检查，没报错不用看）
-```
-torch                         2.1.1
-transformers                  4.34.0
-transformers-stream-generator 0.0.4
-```
-```bash
-pip install torch==2.1.1
-pip install transformers==4.34.0
-pip install transformers-stream-generator=0.0.4
-```
-CUDA 相关：（如果有报错再检查，没报错不用看）
-```
-NVIDIA-SMI 535.54.03              
-Driver Version: 535.54.03    
-CUDA Version: 12.2
-
-nvidia-cuda-cupti-cu12        12.1.105
-nvidia-cuda-nvrtc-cu12        12.1.105
-nvidia-cuda-runtime-cu12      12.1.105
-```
-
 ## 5 作业
+1）选一个任务场景：角色扮演、对话助手……
+2）收集数据：公开数据集、贴吧论坛、问答网站……
+3）数据处理：预处理、格式转换、人工编写回复……
+4）使用Xtuner开始微调！
 
-**基础作业：**
-
-构建数据集，使用 XTuner 微调 InternLM-Chat-7B 模型, 让模型学习到它是你的智能小助手，效果如下图所示，本作业训练出来的模型的输出需要**将不要葱姜蒜大佬**替换成自己名字或昵称！
-
-**微调前**（回答比较官方）
-![web_show_2.png](imgs%2Fweb_show_2.png)
-
-
-**微调后**（对自己的身份有了清晰的认知）
-![web_show_1.png](imgs%2Fweb_show_1.png)
-
-作业参考答案：https://github.com/InternLM/tutorial/blob/main/xtuner/self.md
-
-**进阶作业：**
-
-- 将训练好的Adapter模型权重上传到 OpenXLab、Hugging Face 或者 MoelScope 任一一平台。
-- 将训练好后的模型应用部署到 OpenXLab 平台，参考部署文档请访问：https://aicarrier.feishu.cn/docx/MQH6dygcKolG37x0ekcc4oZhnCe
-
-**整体实训营项目：**
-
-时间周期：即日起致课程结束
-
-即日开始可以在班级群中随机组队完成一个大作业项目，一些可提供的选题如下：
-
-- 人情世故大模型：一个帮助用户撰写新年祝福文案的人情事故大模型
-- 中小学数学大模型：一个拥有一定数学解题能力的大模型
-- 心理大模型：一个治愈的心理大模型
-- 工具调用类项目：结合 Lagent 构建数据集训练 InternLM 模型，支持对 MMYOLO 等工具的调用
-
-其他基于书生·浦语工具链的小项目都在范围内，欢迎大家充分发挥想象力。
 

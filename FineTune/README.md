@@ -324,8 +324,6 @@ export MKL_SERVICE_FORCE_INTEL=1
 export MKL_THREADING_LAYER=GNU
 xtuner convert pth_to_hf ./internlm_chat_7b_qlora_ruozhiba_e3.py ./work_dirs/internlm_chat_7b_qlora_ruozhiba_e3/epoch_1.pth ./hf
 ```
-此时，路径中应该长这样：
-![path](img/path.png)
 
 <span style="color: red;">**此时，hf 文件夹即为我们平时所理解的所谓 “LoRA 模型文件”**</span>
 

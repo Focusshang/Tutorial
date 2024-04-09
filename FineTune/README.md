@@ -359,7 +359,7 @@ import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 
-model_name_or_path = "merged" //模型名称或路径
+model_name_or_path = "merged" #模型名称或路径
 
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=True)
 model = AutoModelForCausalLM.from_pretrained(model_name_or_path, trust_remote_code=True, torch_dtype=torch.bfloat16, device_map='auto')

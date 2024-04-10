@@ -391,38 +391,15 @@ python ./cli_demo.py
 
 **效果：**
 
-| 微调前 | 微调后 |
-| --- | --- |
-| ![before](img/before.png) | ![after](imgs/after.png) |
+| 问题 | 微调前 | 微调后 | 分析 |
+| --- | --- | --- | --- |
+| 存在的星星不一定都发光，发光的星星不一定还存在。请从多角度解释一下这句话 | ![before1](img/before1.png) | ![after1](imgs/after1.png) |  |
+| 一瓶可乐价格3元一瓶可乐价值3元，一瓶无糖可乐价值4元，所以糖价值-1元 | ![before2](img/before2.png) | ![after2](imgs/after2.png) |  |
+| 秦始皇相信日本有仙丹，海路不好走为什么不修跨海大桥去取呢 | ![before3](img/before3.png) | ![after3](imgs/after3.png) |  |
 
-**`xtuner chat`** **的启动参数**
+| ![before1](img/before1.png) | ![after](imgs/after1.png) |
 
-| 启动参数              | 干哈滴                                                       |
-| --------------------- | ------------------------------------------------------------ |
-| **--prompt-template** | 指定对话模板                                                 |
-| --system              | 指定SYSTEM文本                                               |
-| --system-template     | 指定SYSTEM模板                                               |
-| -**-bits**            | LLM位数                                                      |
-| --bot-name            | bot名称                                                      |
-| --with-plugins        | 指定要使用的插件                                             |
-| **--no-streamer**     | 是否启用流式传输                                             |
-| **--lagent**          | 是否使用lagent                                               |
-| --command-stop-word   | 命令停止词                                                   |
-| --answer-stop-word    | 回答停止词                                                   |
-| --offload-folder      | 存放模型权重的文件夹（或者已经卸载模型权重的文件夹）         |
-| --max-new-tokens      | 生成文本中允许的最大 `token` 数量                                |
-| **--temperature**     | 温度值                                                       |
-| --top-k               | 保留用于顶k筛选的最高概率词汇标记数                          |
-| --top-p               | 如果设置为小于1的浮点数，仅保留概率相加高于 `top_p` 的最小一组最有可能的标记 |
-| --seed                | 用于可重现文本生成的随机种子                                 |
-
-
-
-## 3 其他已知问题和解决方案
-
-## 4 注意事项
-
-## 5 作业
+## 4 作业
 1）选一个任务场景：角色扮演、对话助手……
 2）收集数据：公开数据集、贴吧论坛、问答网站……
 3）数据处理：预处理、格式转换、人工编写回复……

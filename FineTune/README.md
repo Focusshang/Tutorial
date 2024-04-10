@@ -389,15 +389,15 @@ while True:
 python ./cli_demo.py
 ```
 
+
 **效果：**
 
 | 问题 | 微调前 | 微调后 | 分析 |
 | --- | --- | --- | --- |
-| 存在的星星不一定都发光，发光的星星不一定还存在。请从多角度解释一下这句话 | ![before1](img/before1.png) | ![after1](imgs/after1.png) |  |
-| 一瓶可乐价格3元一瓶可乐价值3元，一瓶无糖可乐价值4元，所以糖价值-1元 | ![before2](img/before2.png) | ![after2](imgs/after2.png) |  |
-| 秦始皇相信日本有仙丹，海路不好走为什么不修跨海大桥去取呢 | ![before3](img/before3.png) | ![after3](imgs/after3.png) |  |
+| 为什么我爸妈结婚的时候没邀请我参加婚礼 | ![before1](img/before1.png) | ![after1](img/after1.png) |  微调前没有发现问题的陷阱，回答方向错误，微调后意识到问题的陷阱，并结合不同的情境给出了多层次的解释|
+| 一瓶可乐价格3元一瓶可乐价值3元，一瓶无糖可乐价值4元，所以糖价值-1元 | ![before2](img/before2.png) | ![after2](img/after2.png) | 微调前没有意识到问题的事实性错误，当成了计算题来算，微调后意识到问题的事实性错误并给出了回答 |
+| 秦始皇相信日本有仙丹，海路不好走为什么不修跨海大桥去取呢 | ![before3](img/before3.png) | ![after3](img/after3.png) | 微调前甚至没有理解问题，也没发现问题的陷阱，微调后意识到秦朝不具备修建跨海大桥的技术 |
 
-| ![before1](img/before1.png) | ![after](imgs/after1.png) |
 
 ## 4 作业
 1）选一个任务场景：角色扮演、对话助手……

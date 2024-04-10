@@ -179,7 +179,7 @@ print(f"转换完成，已保存至：{output_file_path}")
     "copyright": "暂无版权及作者信息"
 }
 
-2）原始jsonl每行格式为：
+2）目标jsonl每行格式为：
 
 {
     "conversation":[

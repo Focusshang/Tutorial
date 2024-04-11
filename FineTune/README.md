@@ -2,8 +2,9 @@
 
 # 微调数据构造实验
 
-## 1 xtuner教学使用
-详见：[https://github.com/InternLM/Tutorial/blob/main/xtuner/README.md](https://github.com/InternLM/Tutorial/blob/camp2/xtuner/personal_assistant_document.md)
+## 1 XTuner教学使用
+XTuner的安装、部署、训练教程详见：[XTuner 微调个人小助手认知](https://github.com/InternLM/Tutorial/blob/camp2/xtuner/personal_assistant_document.md)
+
 ## 2 微调实战
 
 > 采用 **[COIG-CQIA](https://opendatalab.org.cn/OpenDataLab/COIG-CQIA)** **数据集**中的弱智吧数据
@@ -56,24 +57,21 @@
 **目标格式**
 
 ```JSON
-[{
-    "conversation":[
-        {
-            "system": "xxx",
-            "input": "xxx",
-            "output": "xxx"
-        }
-    ]
-},
-{
-    "conversation":[
-        {
-            "system": "xxx",
-            "input": "xxx",
-            "output": "xxx"
-        }
-    ]
-}]
+data = [
+    {
+        "messages": [
+            {
+                "role": "user",
+                "content": ""
+            },
+            {
+                "role": "assistant",
+                "content": ""
+            }
+        ]
+    }
+]
+
 ```
 
 > 采用GPT的编写python转换脚本或采用在线的data analysis功能，即可完成数据的转换，prompt如下：
@@ -103,17 +101,20 @@
 }
 
 2）目标jsonl每行格式为：
-
 {
-    "conversation":[
+    "messages": [
         {
-            "system": "xxx",
-            "input": "xxx",
-            "output": "xxx"
+            "role": "user",
+            "content": "天下没有不散的筵席，那么我们相聚的意义又是什么"
+        },
+        {
+            "role": "assistant",
+            "content": "尽管我们相聚的时光有限，但是相聚的意义在于创造美好的回忆和珍贵的关系。相聚让我们感受到彼此的关怀、支持和友情。我们可以一起分享喜悦、快乐和困难，互相支持和激励。相聚也可以是一个机会，让我们相互了解、学习和成长。最重要的是，相聚能够带给我们真实的人际交往和情感交流，让我们感受到生活的丰富和美好。所以，即使相聚的时间有限，我们仍然要珍惜这份意义和与彼此相聚的时光。"
         }
     ]
 }
-3）原始格式的"instruction"对应目标格式的"input"，原始格式的 "output"对应目标格式的 "output"
+
+3）按照从1）到2）的格式转换示例编写转换脚本
 4）将转换后的数据保存为新的jsonl，中文不要转义
 ```
 
@@ -121,129 +122,72 @@
 ```python
 import json
 
-# 定义原始jsonl文件路径和目标jsonl文件路径
-input_file_path = 'original_data.jsonl'
-output_file_path = 'transformed_data.jsonl'
+# 原始和目标文件路径
+input_file_path = 'ruozhiba_raw.jsonl'
+output_file_path = 'ruozhiba_format.jsonl'
 
-# 打开原始jsonl文件进行读取，并打开目标jsonl文件准备写入
-with open(input_file_path, 'r', encoding='utf-8') as input_file, \
-     open(output_file_path, 'w', encoding='utf-8') as output_file:
+# 打开原始文件进行读取
+with open(input_file_path, 'r', encoding='utf-8') as input_file, open(output_file_path, 'w', encoding='utf-8') as output_file:
     for line in input_file:
-        # 解析原始数据行为Python字典
+        # 将每行的json字符串转换为字典
         original_data = json.loads(line)
-        
-        # 构造新的数据格式
-        transformed_data = {
-            "conversation": [
+
+        # 转换格式
+        converted_data = {
+            "messages": [
                 {
-                    "system": "",
-                    "input": original_data.get("instruction", ""),
-                    "output": original_data.get("output", "")
+                    "role": "user",
+                    "content": original_data["instruction"]
+                },
+                {
+                    "role": "assistant",
+                    "content": original_data["output"]
                 }
             ]
         }
-        
-        # 将转换后的数据写入新的jsonl文件，确保中文不转义
-        json.dump(transformed_data, output_file, ensure_ascii=False)
-        output_file.write('\n')  # 在每个json对象后添加换行符，保持jsonl格式
 
-print(f"转换完成，已保存至：{output_file_path}")
+        # 写入新的jsonl文件，确保中文不被转义
+        json.dump(converted_data, output_file, ensure_ascii=False)
+        output_file.write('\n')  # 每行后添加换行符，以保持jsonl格式
 
 ```
 
 #### 2.2.3 划分训练集和测试集
->可以直接修改上面的prompt进行格式化并划分，也可以不用划分，修改的prompt如下：
+>同样可以采用GPT完成python脚本，prompt如下：
 
 ```markdown
-请编写python脚本完成jsonl数据到jsonl数据的格式转换，要求如下：
-1）原始jsonl每行格式为：
-{
-    "instruction": "天下没有不散的筵席，那么我们相聚的意义又是什么",
-    "input": "",
-    "output": "尽管我们相聚的时光有限，但是相聚的意义在于创造美好的回忆和珍贵的关系。相聚让我们感受到彼此的关怀、支持和友情。我们可以一起分享喜悦、快乐和困难，互相支持和激励。相聚也可以是一个机会，让我们相互了解、学习和成长。最重要的是，相聚能够带给我们真实的人际交往和情感交流，让我们感受到生活的丰富和美好。所以，即使相聚的时间有限，我们仍然要珍惜这份意义和与彼此相聚的时光。",
-    "task_type": {
-        "major": [
-            "问答"
-        ],
-        "minor": [
-            "逻辑问答",
-            "隐喻理解"
-        ]
-    },
-    "domain": [
-        "通用"
-    ],
-    "metadata": "暂无元数据信息",
-    "answer_from": "llm",
-    "human_verified": true,
-    "copyright": "暂无版权及作者信息"
-}
-
-2）目标jsonl每行格式为：
-
-{
-    "conversation":[
-        {
-            "system": "xxx",
-            "input": "xxx",
-            "output": "xxx"
-        }
-    ]
-}
-3）原始格式的"instruction"对应目标格式的"input"，原始格式的 "output"对应目标格式的 "output"
-4）将转换后的数据按照7：3的比例划分为训练集和测试集，分别保存为新的jsonl，中文不要转义
-
+请编写python脚本，将单个jsonl文件按照7：3的比例拆分为训练集train.jsonl和测试集test.jsonl
 ```
 
->得到新的python脚本如下：
+>得到python脚本如下：
 ```python
 import json
-from sklearn.model_selection import train_test_split
 
-# 定义原始jsonl文件路径
-input_file_path = 'original_data.jsonl'
+# 输入文件路径和输出文件路径
+input_file_path = 'ruozhiba_format.jsonl'
+train_file_path = 'train.jsonl'
+test_file_path = 'test.jsonl'
 
-# 读取并转换数据
-transformed_data = []
-with open(input_file_path, 'r', encoding='utf-8') as input_file:
-    for line in input_file:
-        # 将每一行的JSON字符串转换成字典
-        original_data = json.loads(line)
-        
-        # 创建新的数据格式
-        new_data = {
-            "conversation": [
-                {
-                    "system": "",
-                    "input": original_data.get("instruction", ""),
-                    "output": original_data.get("output", "")
-                }
-            ]
-        }
-        
-        transformed_data.append(new_data)
+# 读取原始文件，将所有行存储在一个列表中
+with open(input_file_path, 'r', encoding='utf-8') as file:
+    lines = file.readlines()
 
-# 划分数据集
-train_data, test_data = train_test_split(transformed_data, test_size=0.3, random_state=42)
+# 计算训练集和测试集的分割点
+split_index = int(len(lines) * 0.7)
 
-# 定义训练集和测试集的文件路径
-train_file_path = 'train_data.jsonl'
-test_file_path = 'test_data.jsonl'
+# 拆分数据
+train_lines = lines[:split_index]
+test_lines = lines[split_index:]
 
-# 保存训练集
-with open(train_file_path, 'w', encoding='utf-8') as train_file:
-    for data in train_data:
-        json.dump(data, train_file, ensure_ascii=False)
-        train_file.write('\n')
+# 写入训练集
+with open(train_file_path, 'w', encoding='utf-8') as file:
+    for line in train_lines:
+        file.write(line)
 
-# 保存测试集
-with open(test_file_path, 'w', encoding='utf-8') as test_file:
-    for data in test_data:
-        json.dump(data, test_file, ensure_ascii=False)
-        test_file.write('\n')
-
-print(f"数据转换完成，训练集已保存至：{train_file_path}，测试集已保存至：{test_file_path}")
-
+# 写入测试集
+with open(test_file_path, 'w', encoding='utf-8') as file:
+    for line in test_lines:
+        file.write(line)
 ```
 
 

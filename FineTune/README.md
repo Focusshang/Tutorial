@@ -57,20 +57,18 @@ XTuner的安装、部署、训练教程详见：[XTuner 微调个人小助手认
 **目标格式**
 
 ```JSON
-data = [
-    {
-        "messages": [
-            {
-                "role": "user",
-                "content": ""
-            },
-            {
-                "role": "assistant",
-                "content": ""
-            }
-        ]
-    }
-]
+{
+    "messages": [
+        {
+            "role": "user",
+            "content": ""
+        },
+        {
+            "role": "assistant",
+            "content": ""
+        }
+    ]
+}
 
 ```
 

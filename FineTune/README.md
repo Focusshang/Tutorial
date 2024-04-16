@@ -277,7 +277,7 @@ xtuner copy-cfg internlm2_1_8b_qlora_alpaca_e3 /root/ft-ruozhiba/config
 
 其他参数的调整可以自行定义
 
-#### 2.3.2 **XTuner！启动！**
+#### 2.3.2 **启动训练**
 
 ```bash
 xtuner train /root/ft-ruozhiba/config/internlm2_1_8b_qlora_ruozhiba_e3.py --work-dir /root/ft-ruozhiba/train --deepspeed deepspeed_zero2
@@ -303,61 +303,22 @@ xtuner convert pth_to_hf /root/ft-ruozhiba/train/internlm2_1_8b_qlora_ruozhiba_e
 #### 2.4.1 将 HuggingFace adapter 合并到大语言模型：
 
 ```Bash
-xtuner convert merge ./internlm-chat-7b ./hf ./merged --max-shard-size 2GB
-# xtuner convert merge \
-#     ${NAME_OR_PATH_TO_LLM} \
-#     ${NAME_OR_PATH_TO_ADAPTER} \
-#     ${SAVE_PATH} \
-#     --max-shard-size 2GB
+# 创建一个存放最终模型的路径
+mkdir -p /root/ft-ruozhiba/final_model
+
+# 解决一下线程冲突的 Bug 
+export MKL_SERVICE_FORCE_INTEL=1
+
+# 进行模型整合
+xtuner convert merge /root/ft-ruozhiba/model /root/ft-ruozhiba/huggingface /root/ft-ruozhiba/final_model
 ```
 
 #### 2.4.2 与合并后的模型对话：
 ```Bash
 # 加载 Adapter 模型对话（Float 16）
-xtuner chat ./merged --prompt-template internlm_chat
-
-# 4 bit 量化加载
-# xtuner chat ./merged --bits 4 --prompt-template internlm_chat
+xtuner chat /root/ft-ruozhiba/model --prompt-template internlm2_chat
 ```
-
-#### 2.4.3 Demo
-- 新建cli_demo.py并填入以下内容
-
-```python
-import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
-
-
-model_name_or_path = "merged" #模型名称或路径
-
-tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=True)
-model = AutoModelForCausalLM.from_pretrained(model_name_or_path, trust_remote_code=True, torch_dtype=torch.bfloat16, device_map='auto')
-model = model.eval()
-
-system_prompt = """You are an AI assistant whose name is InternLM (书生·浦语).
-- InternLM (书生·浦语) is a conversational language model that is developed by Shanghai AI Laboratory (上海人工智能实验室). It is designed to be helpful, honest, and harmless.
-- InternLM (书生·浦语) can understand and communicate fluently in the language chosen by the user such as English and 中文.
-"""
-
-messages = [(system_prompt, '')]
-
-print("=============Welcome to InternLM chatbot, type 'exit' to exit.=============")
-
-while True:
-    input_text = input("User  >>> ")
-    input_text.replace(' ', '')
-    if input_text == "exit":
-        break
-    response, history = model.chat(tokenizer, input_text, history=messages)
-    messages.append((input_text, response))
-    print(f"robot >>> {response}")
-```
-
-- 运行 `cli_demo.py` 以目测微调效果
-```bash
-python ./cli_demo.py
-```
-
+同样也可以部署Web demo与模型进行对话，详见[XTuner 微调个人小助手认知](https://github.com/InternLM/Tutorial/blob/camp2/xtuner/personal_assistant_document.md)中的**2.5.4 Web demo 部署**章节~
 
 **效果：**
 
@@ -367,8 +328,9 @@ python ./cli_demo.py
 | 一瓶可乐价格3元一瓶可乐价值3元，一瓶无糖可乐价值4元，所以糖价值-1元 | ![before2](img/before2.png) | ![after2](img/after2.png) | 微调前没有意识到问题的事实性错误，当成了计算题来算，微调后意识到问题的事实性错误并给出了回答 |
 | 秦始皇相信日本有仙丹，海路不好走为什么不修跨海大桥去取呢 | ![before3](img/before3.png) | ![after3](img/after3.png) | 微调前甚至没有理解问题，也没发现问题的陷阱，微调后意识到秦朝不具备修建跨海大桥的技术 |
 
+结论：
 
-## 4 作业
+## 3 作业
 - 选一个任务场景：角色扮演、对话助手……
 - 收集数据：公开数据集、贴吧论坛、问答网站……
 - 数据处理：预处理、格式转换、人工编写回复……

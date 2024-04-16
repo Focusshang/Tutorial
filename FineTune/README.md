@@ -7,29 +7,52 @@ XTuner的安装、部署、训练教程详见：[XTuner 微调个人小助手认
 
 ## 2 微调实战
 
-> 采用 **[COIG-CQIA](https://opendatalab.org.cn/OpenDataLab/COIG-CQIA)** **数据集**中的弱智吧数据
+> 采用弱智吧数据进行训练~
 
 ### 2.1 概述
 
 #### 2.1.1 **场景需求**
 
-   基于 InternLM-chat-7B 模型，用弱智吧中的数据进行微调，训练一个不弱智的模型
+   基于 InternLM2-chat-1.8B 模型，用弱智吧中的数据进行微调，训练一个不弱智的模型
 
-#### 2.1.2 **真实数据预览**
+### 2.2 数据准备 
+
+#### 2.2.1 数据构造
+
+首先介绍下如何构造高质量的SFT数据：
+1. 数据选择和采集
+微调数据的选择应该基于目标应用场景：
+- 领域相关性：选择与预期应用场景密切相关的文本数据。例如，如果目标是法律助理，应选择法律文档和案例。本实验目的是提升模型的推理和识别逻辑陷阱的能力，因此选择弱智吧的数据。
+- 质量高：这里指的是问题和回答都要是高质量的，通常需要语法正确，信息准确，风格一致。
+- 多样性：确保数据覆盖所有相关子话题，以促进模型的泛化能力。
+2. 数据预处理
+为了提高模型的效率和效果，数据预处理是必不可少的步骤：
+- 清洗：去除无关的内容，如广告、HTML标签、无意义的填充词等。
+- 标准化：统一词汇的格式，比如时间、日期、货币单位等。
+- 分词：根据目标模型的需求进行适当的分词处理。
+- 去噪声：消除文本中的错误，如拼写错误、语法错误等。
+3. 数据标注
+由于微调数据规模不大，因此可以通过标注的方式来进行构造，这里有两种不同的标注方法：
+- 人工标注：由人工专家进行标注，确保标注的准确性和一致性。采用人工的方式成本比较高，但质量相对较好，尤其在涉及一些专业领域的时候，领域专家能够更好的理解问题并给出回复。这里介绍下我们的仓库：https://github.com/opendatalab，里面主要是一些数据处理工具，预计2024年5月会开源一个专门用于大语言模型标注的免费的标注工具。
+- 自动标注：使用已有的模型进行初步标注，然后由人工校验和修正。可以采用GPT4来生成回复，再由人工来判断回答的好坏，并进行修正。
+4. 数据增强
+数据增强可以提高模型的鲁棒性和泛化能力，方法有：
+- 文本重述：用不同的方式表达同一意思，增加文本的多样性。
+- 翻译循环：将文本翻译成一种语言，然后再翻译回原语言，通常用于生成新的文本表达。
+- 合成数据生成：使用规则或模型生成新的训练样本。
+5. 数据划分
+通常分为训练集、验证集和测试集。合理划分数据，确保模型能在未见过的数据上进行有效的泛化测试。
+
+在本次实验中我们直接采用公开数据集中处理过的微调数据给大家做个简单的演示。大家可以访问 **[Huggingface](https://huggingface.co/datasets/m-a-p/COIG-CQIA)** 或者 **[OpenDatalab](https://opendatalab.org.cn/OpenDataLab/COIG-CQIA)** 进行数据集下载，由于huggingface网络连接问题，推荐国内的同学访问OpenDataLab进行数据集下载。我们选择其中的弱智吧数据进行微调，这个数据集的问题来自于点赞数超过500的弱智吧问题，基本都是一些逻辑陷阱或者脑筋急转弯，然后通过人工或GPT4的方式编写正确回答，再由人工校验后筛选出200多条高质量微调数据。
+
+#### 2.2.2 **真实数据预览**
 
 | 问题                                                       | 答案                                                         |
 | ---------------------------------------------------------- | ------------------------------------------------------------ |
 | 石油也是油，为啥没人用它来炒菜？ | 石油虽然也是一种油，但它并不适用于烹饪。这主要是因为石油和食用油在化学成分和用途上有很大的不同： 1. **化学 成分**：食用油是由植物或动物脂肪制成的，主要含有对人体有益的脂肪酸，如欧米伽脂肪酸。而石油是一种化石燃料，主要由碳氢化合物组成，含有多种有害的化学物质。 2. **毒性**：石油中含有的化学物质对人体是有害的，甚至是致癌的。这些物质在加热时会产 生有毒的烟雾和蒸气，这对健康极为不利。 3. **风味和气味**：食用油在烹饪中可以增添食物的风味，而石油的气味和味道都非常 强烈且令人不悦，不适合用于食物。 4. **燃点**：石油的燃点远低于食用油，这意味着它在较低的温度下就会燃烧，这在厨房中极 为危险，容易引发火灾。 因此，出于健康和安全的考虑，石油绝不能用于烹饪。食用油是专门为食品烹饪设计的，既安全又有益健康。 |
 | 据数据表明，异性间的离婚率远大于同性，而中国同性离婚率至今为0这是否说明同性间结婚比异性更有优势|这个问题涉及到对离婚率数据的解读，以及同性和异性婚姻的比较。首先，需要明确一点：中国目前不承认同性婚姻，因此官方统计中不会有关于同性离婚率的数据。因此，任何关于中国同性婚姻离婚率的讨论都是基于非正式或非法律承认的情况。 从更广泛的角度来看，离婚率受到许多因素的影响，包括社会文化、法律环境、经济状况等。比较不同类型婚姻的离婚率时，这些因素都需要被考虑在内。同性婚姻在许多国家和地区是新近承认的，可能受到不同的社会和文化压力，这些都可能影响离婚率。 简单地将两种婚姻形式的离婚率进行对比，并不能直接说明哪一种婚姻形式更有优势。婚姻的质量和稳定性受到众多复杂因素的影响，包括双方的个人特质、沟通能力、外部压力等。因此，解读这样的统计数据时需要谨慎，并考虑到背后的多种可能性和复杂性。 |
 
-
-### 2.2 数据准备 
-
-#### 2.2.1 数据集下载
-
-可以访问 **[Huggingface](https://huggingface.co/datasets/m-a-p/COIG-CQIA)** 或者 **[OpenDatalab](https://opendatalab.org.cn/OpenDataLab/COIG-CQIA)** 进行数据集下载，由于huggingface网络连接问题，推荐国内的同学访问OpenDataLab进行数据集下载
-
-#### 2.2.2 将数据转为 XTuner 的数据格式
+#### 2.2.3 将数据转为 XTuner 的数据格式
 **原始数据格式**
 ```JSON
 {
@@ -150,7 +173,7 @@ with open(input_file_path, 'r', encoding='utf-8') as input_file, open(output_fil
 
 ```
 
-#### 2.2.3 划分训练集和测试集
+#### 2.2.4 划分训练集和测试集
 >同样可以采用GPT完成python脚本，prompt如下：
 
 ```markdown
@@ -190,81 +213,85 @@ with open(test_file_path, 'w', encoding='utf-8') as file:
 
 
 ### 2.3 开始自定义微调
->本节内容可参照 **[xtuner实战](https://github.com/InternLM/Tutorial/blob/main/xtuner/README.md)**，这里简单介绍下流程：
+>本节内容可参照 **[XTuner 微调个人小助手认知](https://github.com/InternLM/Tutorial/blob/camp2/xtuner/personal_assistant_document.md)**，这里简单介绍下流程：
+
+首先进入之前创建的开发机并激活之前创建的虚拟环境
+```bash
+conda activate xtuner0.1.17
+```
+
 
 建立文件夹ruozhiba
 ```bash
-mkdir ~/ruozhiba && cd ~/ruozhiba
+mkdir ~/ft-ruozhiba && cd ~/ft-ruozhiba
 ```
 
-复制internlm-chat-7b模型
+复制internlm2-chat-1.8B模型
 ```bash
-ln -s /share/temp/model_repos/internlm-chat-7b ~/ruozhiba/
+mkdir -p /root/ft-ruozhiba/model
+cp -r /root/share/new_models/Shanghai_AI_Laboratory/internlm2-chat-1_8b/* /root/ft-ruozhiba/model/
 ```
 
-上传处理后的弱智吧数据
+上传处理后的弱智吧数据，首先新建data文件夹：
+```bash
+mkdir -p /root/ft-ruozhiba/data
+```
+然后将处理过的训练集train.jsonl和测试集test.jsonl上传到该路径下
 
 #### 2.3.1 准备配置文件
-本案例基于internlm_chat_7b_qlora_oasst1_e3.py进行修改
+本案例基于internlm2_1_8b_qlora_alpaca_e3.py进行修改
 
 ```bash
-# 复制配置文件到当前目录
-xtuner copy-cfg internlm_chat_7b_qlora_oasst1_e3 .
+# 创建一个存放 config 文件的文件夹
+mkdir -p /root/ft-ruozhiba/config
 
-# 改个文件名
-mv internlm_chat_7b_qlora_oasst1_e3_copy.py internlm_chat_7b_qlora_ruozhiba_e3.py
-
-# 修改配置文件内容
-vim internlm_chat_7b_qlora_ruozhiba_e3.py
+# 使用 XTuner 中的 copy-cfg 功能将 config 文件复制到指定的位置
+xtuner copy-cfg internlm2_1_8b_qlora_alpaca_e3 /root/ft-ruozhiba/config
 ```
-
-减号代表要删除的行，加号代表要增加的行。
+接下来修改配置文件，主要是模型和数据的路径：
 ```diff
-# 修改import部分
-- from xtuner.dataset.map_fns import oasst1_map_fn, template_map_fn_factory
-+ from xtuner.dataset.map_fns import template_map_fn_factory
+# 修改模型地址（在第27行的位置）
+- pretrained_model_name_or_path = 'internlm/internlm2-1_8b'
++ pretrained_model_name_or_path = '/root/ft-ruozhiba/model'
 
-# 修改模型为本地路径
-- pretrained_model_name_or_path = 'internlm/internlm-chat-7b'
-+ pretrained_model_name_or_path = './internlm-chat-7b'
+# 修改数据集地址为本地的json文件地址（在第31行的位置）
+- alpaca_en_path = 'tatsu-lab/alpaca'
++ alpaca_en_path = '/root/ft-ruozhiba/data/train.json'
 
-# 修改训练数据为弱智吧训练数据路径
-- data_path = 'timdettmers/openassistant-guanaco'
-+ data_path = 'train.jsonl'
+# 修改评估的问题（在第59到61行的位置）
+- evaluation_inputs = ['请给我介绍五个上海的景点', 'Please tell me five scenic spots in Shanghai']
++ evaluation_inputs = ['']
 
-# 修改 train_dataset 对象
-train_dataset = dict(
-    type=process_hf_dataset,
--   dataset=dict(type=load_dataset, path=data_path),
-+   dataset=dict(type=load_dataset, path='json', data_files=dict(train=data_path)),
-    tokenizer=tokenizer,
-    max_length=max_length,
--   dataset_map_fn=alpaca_map_fn,
-+   dataset_map_fn=None,
-    template_map_fn=dict(
-        type=template_map_fn_factory, template=prompt_template),
-    remove_unused_columns=True,
-    shuffle_before_pack=True,
-    pack_to_max_length=pack_to_max_length)
+# 把 OpenAI 格式的 map_fn 载入进来（在第15行的位置）
+- from xtuner.dataset.map_fns import alpaca_map_fn, template_map_fn_factory
++ from xtuner.dataset.map_fns import openai_map_fn, template_map_fn_factory
+
+# 将原本是 alpaca 的地址改为是 json 文件的地址（在第102行的位置）
+- dataset=dict(type=load_dataset, path=alpaca_en_path),
++ dataset=dict(type=load_dataset, path='json', data_files=dict(train=alpaca_en_path)),
+
+# 将 dataset_map_fn 改为通用的 OpenAI 数据集格式（在第105行的位置）
+- dataset_map_fn=alpaca_map_fn,
++ dataset_map_fn=openai_map_fn,
 ```
+
+其他参数的调整可以自行定义
+
 #### 2.3.2 **XTuner！启动！**
 
 ```bash
-xtuner train internlm_chat_7b_ruozhiba.py --deepspeed deepspeed_zero2
+xtuner train /root/ft-ruozhiba/config/internlm2_1_8b_qlora_ruozhiba_e3.py --work-dir /root/ft-ruozhiba/train --deepspeed deepspeed_zero2
 ```
+
+静静等待训练结束。
 
 #### 2.3.3 pth 转 huggingface
 
 将得到的 PTH 模型转换为 HuggingFace 模型，**即：生成 Adapter 文件夹**
 
-`xtuner convert pth_to_hf ${CONFIG_NAME_OR_PATH} ${PTH_file_dir} ${SAVE_PATH}`
-
-在本示例中，为：
 ```bash
-mkdir hf
-export MKL_SERVICE_FORCE_INTEL=1
-export MKL_THREADING_LAYER=GNU
-xtuner convert pth_to_hf ./internlm_chat_7b_qlora_ruozhiba_e3.py ./work_dirs/internlm_chat_7b_qlora_ruozhiba_e3/epoch_1.pth ./hf
+mkdir -p /root/ft-ruozhiba/huggingface
+xtuner convert pth_to_hf /root/ft-ruozhiba/train/internlm2_1_8b_qlora_ruozhiba_e3.py /root/ft-ruozhiba/train/iter_96.pth /root/ft-ruozhiba/huggingface
 ```
 
 <span style="color: red;">**此时，hf 文件夹即为我们平时所理解的所谓 “LoRA 模型文件”**</span>

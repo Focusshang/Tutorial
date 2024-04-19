@@ -256,9 +256,10 @@ mkdir -p /root/ft-ruozhiba/data
 mkdir -p /root/ft-ruozhiba/config
 
 # 使用 XTuner 中的 copy-cfg 功能将 config 文件复制到指定的位置
-xtuner copy-cfg internlm2_1_8b_qlora_alpaca_e3 /root/ft-ruozhiba/config
+xtuner copy-cfg internlm2_1_8b_qlora_alpaca_e3 /root/ft-ruozhiba/config/
 ```
-接下来修改配置文件，主要是模型和数据的路径：
+
+重命名配置文件为'internlm2_1_8b_qlora_ruozhiba_e3.py'，并修改配置文件，主要是模型和数据的路径：
 ```diff
 # 修改模型地址（在第27行的位置）
 - pretrained_model_name_or_path = 'internlm/internlm2-1_8b'
@@ -266,7 +267,7 @@ xtuner copy-cfg internlm2_1_8b_qlora_alpaca_e3 /root/ft-ruozhiba/config
 
 # 修改数据集地址为本地的json文件地址（在第31行的位置）
 - alpaca_en_path = 'tatsu-lab/alpaca'
-+ alpaca_en_path = '/root/ft-ruozhiba/data/train.json'
++ alpaca_en_path = '/root/ft-ruozhiba/data/train.jsonl'
 
 # 修改评估的问题（在第59到61行的位置）
 - evaluation_inputs = ['请给我介绍五个上海的景点', 'Please tell me five scenic spots in Shanghai']
